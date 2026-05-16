@@ -1,0 +1,131 @@
+const database = db.getSiblingDB("spotify");
+
+print("=== Part 2.1: Party tracks ===");
+const partyTracks = database.tracks
+  .find(
+    {
+      "audio_features.danceability": { $gt: 0.7 },
+      "audio_features.energy": { $gt: 0.7 },
+      duration_ms: { $gte: 180000, $lte: 300000 }
+    },
+    {
+      _id: 0,
+      track_name: 1,
+      artists: 1,
+      track_genre: 1,
+      duration_ms: 1,
+      "audio_features.danceability": 1,
+      "audio_features.energy": 1
+    }
+  )
+  .limit(20)
+  .toArray();
+printjson(partyTracks);
+
+print("=== Part 2.2: Artists with all tracks popular ===");
+const popularArtists = database.tracks
+  .aggregate([
+    { $unwind: "$artists" },
+    {
+      $group: {
+        _id: "$artists",
+        tracks_count: { $sum: 1 },
+        min_popularity: { $min: "$popularity" },
+        avg_popularity: { $avg: "$popularity" }
+      }
+    },
+    {
+      $match: {
+        tracks_count: { $gte: 3 },
+        min_popularity: { $gte: 60 }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        artist: "$_id",
+        tracks_count: 1,
+        min_popularity: 1,
+        avg_popularity: { $round: ["$avg_popularity", 1] }
+      }
+    },
+    { $sort: { avg_popularity: -1, tracks_count: -1, artist: 1 } },
+    { $limit: 20 }
+  ])
+  .toArray();
+printjson(popularArtists);
+
+print("=== Part 2.3: Tempo outliers by genre ===");
+const tempoOutliers = database.tracks
+  .aggregate([
+    {
+      $group: {
+        _id: "$track_genre",
+        avg_tempo: { $avg: "$audio_features.tempo" },
+        std_tempo: { $stdDevPop: "$audio_features.tempo" },
+        tracks: {
+          $push: {
+            track_name: "$track_name",
+            artists: "$artists",
+            tempo: "$audio_features.tempo",
+            popularity: "$popularity"
+          }
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        genre: "$_id",
+        avg_tempo: { $round: ["$avg_tempo", 2] },
+        outlier_threshold: {
+          $round: [{ $add: ["$avg_tempo", { $multiply: [2, "$std_tempo"] }] }, 2]
+        },
+        outlier_tracks: {
+          $filter: {
+            input: "$tracks",
+            as: "track",
+            cond: {
+              $gt: [
+                "$$track.tempo",
+                { $add: ["$avg_tempo", { $multiply: [2, "$std_tempo"] }] }
+              ]
+            }
+          }
+        }
+      }
+    },
+    { $match: { "outlier_tracks.0": { $exists: true } } },
+    {
+      $addFields: {
+        outliers_count: { $size: "$outlier_tracks" }
+      }
+    },
+    { $sort: { outliers_count: -1, genre: 1 } }
+  ])
+  .toArray();
+printjson(tempoOutliers);
+
+print("=== Part 2.4: Background-work tracks ===");
+const workTracks = database.tracks
+  .find(
+    {
+      "audio_features.loudness": { $lt: -10 },
+      "audio_features.speechiness": { $lt: 0.1 },
+      "audio_features.instrumentalness": { $gt: 0.5 },
+      explicit: false
+    },
+    {
+      _id: 0,
+      track_name: 1,
+      artists: 1,
+      track_genre: 1,
+      explicit: 1,
+      "audio_features.loudness": 1,
+      "audio_features.speechiness": 1,
+      "audio_features.instrumentalness": 1
+    }
+  )
+  .limit(20)
+  .toArray();
+printjson(workTracks);
