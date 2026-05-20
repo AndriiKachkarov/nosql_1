@@ -84,6 +84,8 @@ MONGO_URI=$(grep '^MONGO_URI=' .env | cut -d= -f2-) && mongosh "$MONGO_URI" --fi
 
 - 2.3  Нетипові треки
 
+  > Оскільки в умові задачі не вказано ліміт на кількість аутлаєрів у жанрі, у полі `outlier_tracks` виводяться щонайбільше 5 треків на жанр. Повна кількість аутлаєрів у жанрі відображається в полі `outliers_count`.
+
 <img src="sceenshots/part_2.3.png" width="300" style="border: 1px solid grey;">
 
 - 2.4 Треки для фонової роботи
@@ -106,9 +108,9 @@ MONGO_URI=$(grep '^MONGO_URI=' .env | cut -d= -f2-) && mongosh "$MONGO_URI" --fi
 
 <img src="sceenshots/part_3.2.png" width="300" style="border: 1px solid grey;">
 
-- 3.3 Найтанцювальніші жанри (min 100 tracks)
+- 3.3 Найтанцювальніший жанр (min 100 tracks)
 
-<img src="sceenshots/part_3.1.png" width="300" style="border: 1px solid grey;">
+<img src="sceenshots/part_3.3.png" width="300" style="border: 1px solid grey;">
 
 
 ### Крок 5: Частина 4 - Індекси та оптимізація

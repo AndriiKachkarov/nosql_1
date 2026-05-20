@@ -74,14 +74,11 @@ const tempoOutliers = database.tracks
       }
     },
     {
-      $project: {
-        _id: 0,
-        genre: "$_id",
-        avg_tempo: { $round: ["$avg_tempo", 2] },
-        outlier_threshold: {
-          $round: [{ $add: ["$avg_tempo", { $multiply: [2, "$std_tempo"] }] }, 2]
+      $addFields: {
+        _threshold: {
+          $add: ["$avg_tempo", { $multiply: [2, "$std_tempo"] }]
         },
-        outlier_tracks: {
+        _outliers: {
           $filter: {
             input: "$tracks",
             as: "track",
@@ -95,12 +92,17 @@ const tempoOutliers = database.tracks
         }
       }
     },
-    { $match: { "outlier_tracks.0": { $exists: true } } },
     {
-      $addFields: {
-        outliers_count: { $size: "$outlier_tracks" }
+      $project: {
+        _id: 0,
+        genre: "$_id",
+        avg_tempo: { $round: ["$avg_tempo", 2] },
+        outlier_threshold: { $round: ["$_threshold", 2] },
+        outliers_count: { $size: "$_outliers" },
+        outlier_tracks: { $slice: ["$_outliers", 5] }
       }
     },
+    { $match: { outliers_count: { $gt: 0 } } },
     { $sort: { outliers_count: -1, genre: 1 } }
   ])
   .toArray();

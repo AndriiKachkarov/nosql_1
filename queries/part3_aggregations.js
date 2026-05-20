@@ -85,7 +85,7 @@ const moodDistribution = database.tracks
   .toArray();
 printjson(moodDistribution);
 
-print("=== Part 3.3: Most danceable genres (min 100 tracks) ===");
+print("=== Part 3.3: Most danceable genre (min 100 tracks) ===");
 const danceableGenres = database.tracks
   .aggregate([
     {
@@ -108,7 +108,8 @@ const danceableGenres = database.tracks
         avg_valence: { $round: ["$avg_valence", 3] }
       }
     },
-    { $sort: { avg_danceability: -1, tracks_count: -1, genre: 1 } }
+    { $sort: { avg_danceability: -1, tracks_count: -1, genre: 1 } },
+    { $limit: 1 }
   ])
   .toArray();
 printjson(danceableGenres);
